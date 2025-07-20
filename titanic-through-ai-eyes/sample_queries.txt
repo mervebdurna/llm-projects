@@ -1,0 +1,41 @@
+Statistician:
+- What was the overall survival rate on the Titanic?
+- How did survival vary by passenger class?
+- Can you explain survival differences based on age groups?
+- What percentage of women survived compared to men?
+- Were there any notable trends in ticket fare vs survival?
+
+Data Scientist:
+- Which features were most important in predicting survival?
+- How accurate are your survival prediction models?
+- Can you explain the model's decision for a specific passenger?
+- Did the data show any bias in survival predictions?
+- How did you preprocess the Titanic dataset for modeling?
+
+Sociologist:
+- How did social class influence survival odds on the Titanic?
+- What role did gender norms play during the evacuation?
+- Can you describe how family status affected survival?
+- Were there disparities in treatment between different passenger classes?
+- How did societal expectations in 1912 reflect in the survival outcomes?
+
+Insurance Analyst:
+- What risks did 3rd class passengers pose compared to 1st class?
+- How did age and gender impact passenger risk profiles?
+- Can you evaluate the financial impact of the Titanic disaster on marine insurance?
+- Were ticket fares good indicators of risk?
+- How would you adjust insurance premiums based on this data?
+
+1st Class Passenger:
+- How did it feel to be a 1st class passenger on such a luxurious ship?
+- What was your experience during the disaster?
+- Did you feel privileged during the evacuation?
+- How do you view the survival chances of other classes?
+- Would you have done anything differently on that night?
+
+3rd Class Passenger:
+- What was it like traveling in 3rd class on the Titanic?
+- How did the crew treat 3rd class passengers during the sinking?
+- Did you think you had a fair chance of survival?
+- How did social class affect your experience during the disaster?
+- What would you want the world to remember about 3rd class passengers?
