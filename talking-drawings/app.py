@@ -1,16 +1,17 @@
+import base64
+from dotenv import load_dotenv
 import gradio as gr
+import io
+import json
 from openai import OpenAI
 import os
-import base64
-import io
-from dotenv import load_dotenv
 import re
 
 # Load environment variables
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Global vars to hold last analysis
+# Global vars to hold last drawinganalysis
 chat_history = []
 last_step1 = ""
 last_step2 = ""
@@ -33,30 +34,28 @@ def analyze_drawing(name, age, image):
     img_b64 = image_to_base64(image)
     img_data_url = f"data:image/png;base64,{img_b64}"
 
-    system_prompt = """
-You are a professional child drawing analyst. Your output must strictly follow the format given by the user.
-Do NOT add emojis, numbers, bullet points, or any extra commentary.
-Do NOT truncate or cut off any parts.
-Only reply with exactly 3 steps labeled as Step 1, Step 2, and Step 3.
+    system_prompt = """You are a professional child drawing analyst.
+
+Your task is to analyze a child's drawing in a clear, structured way.
+
+Respond **only** with a JSON object with exactly these keys:
+
+{
+  "step_1": "Detailed description of visual elements in the drawing (colors, shapes, figures, layout).",
+  "step_2": "Exactly 3 dominant emotions the child might be expressing, each emotion followed by a relevant emoji, separated by commas. Example: Joy 😊, Sadness 😢, Confusion 😕",
+  "step_3": "A warm, friendly, and supportive psychological interpretation in 2 to 4 sentences."
+}
+
+Rules:
+- Do not include anything outside this JSON object.
+- Do not add bullet points, numbering, or extra commentary.
+- Do not truncate or omit any step.
+- Always maintain a professional but gentle tone.
+- Only Step 2 contains emojis.
+
 """
 
-    user_prompt = f"""
-You are a child drawing analyst. A child named {name}, age {age}, made the drawing you're about to see.
-
-Please respond exactly in this format:
-
-Step 1: Describe in detail the visual elements you observe in the drawing, including colors, figures, and layout.
-
-Step 2: List exactly 3 dominant emotions the child may be expressing. Write only the emotion names separated by commas, no emojis, no extra text, no numbering. Example: Joy, Sadness, Confusion
-
-Step 3: Give a short psychological interpretation (2 to 4 sentences) in a warm, friendly, and supportive tone.
-
-Make sure:
-- To label each section exactly as "Step 1:", "Step 2:", and "Step 3:" on separate lines.
-- Do not include anything else outside these three steps.
-- Do not include emojis anywhere.
-- Do not cut off or truncate any step.
-"""
+    user_prompt = f"""A child named {name}, age {age}, created the drawing you will analyze. Please provide your analysis based on the image."""
 
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -73,20 +72,24 @@ Make sure:
         max_tokens=800,
     )
 
-    content = response.choices[0].message.content
+    content = response.choices[0].message.content.strip()
 
     try:
-        step_1 = re.search(r"Step 1:(.*?)(Step 2:|$)", content, re.DOTALL).group(1).strip()
-        step_2 = re.search(r"Step 2:(.*?)(Step 3:|$)", content, re.DOTALL).group(1).strip()
-        step_3 = re.search(r"Step 3:(.*)", content, re.DOTALL).group(1).strip()
-    except Exception:
-        return "Could not parse the AI response.", "", ""
+        analysis = json.loads(content)
+        step_1 = analysis.get("step_1", "")
+        step_2 = analysis.get("step_2", "")
+        step_3 = analysis.get("step_3", "")
+    except json.JSONDecodeError:
+        return "Could not parse the AI response as JSON.", "", ""
 
     # Save for future chat use
     last_step1, last_step2, last_step3 = step_1, step_2, step_3
 
+    # Format the emotions from step_2
     emotions = ", ".join([e.strip() for e in step_2.split(",") if e.strip()])
-    return step_3, step_1, emotions
+
+    return last_step3, last_step1, emotions
+
 
 # Reset chat history on new image
 def reset_chat_history():
@@ -103,15 +106,21 @@ def chat_with_drawing(user_msg, image):
         chat_history.append({"role": "assistant", "content": "Please analyze a drawing first."})
         return chat_history, ""
 
-    system_prompt = f"""
-You're a friendly assistant helping discuss a child's drawing.
+    system_prompt = system_prompt = f"""
+You are a friendly, empathetic assistant helping to discuss and understand a child's drawing.
 
-Here is the drawing analysis:
-Step 1: {last_step1}
-Step 2: {last_step2}
-Step 3: {last_step3}
+Use the following analysis to answer the user's questions clearly and supportively.
 
-Use this information to respond helpfully to the user's questions.
+Drawing analysis details:
+Step 1 - Visual description: {last_step1}
+Step 2 - Emotions expressed by the child: {last_step2}
+Step 3 - Psychological interpretation: {last_step3}
+
+Please:
+- Respond only based on the information above.
+- Keep answers warm, respectful, and easy to understand.
+- Do not invent new information or speculate beyond the analysis.
+- Avoid repetition and keep responses concise but helpful.
 """
 
     response = client.chat.completions.create(
